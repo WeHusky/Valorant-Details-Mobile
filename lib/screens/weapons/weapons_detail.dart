@@ -1,0 +1,248 @@
+import 'package:flutter/material.dart';
+import 'package:tugas_akhir_valorant/model/weapons_model.dart'; // Sesuaikan path import modelmu
+
+class WeaponDetailPage extends StatefulWidget {
+  final WeaponsModel weapon;
+
+  const WeaponDetailPage({super.key, required this.weapon});
+
+  @override
+  State<WeaponDetailPage> createState() => _WeaponDetailPageState();
+}
+
+class _WeaponDetailPageState extends State<WeaponDetailPage> {
+  // Variabel untuk menyimpan skin yang sedang dipilih
+  late Skin _selectedSkin;
+
+  // Variabel untuk menyimpan daftar skin yang valid (punya gambar)
+  late List<Skin> _availableSkins;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. Saring daftar skin: Hanya ambil skin yang memiliki displayIcon (URL gambar)
+    _availableSkins = widget.weapon.skins
+        .where(
+          (skin) => skin.displayIcon != null && skin.displayIcon!.isNotEmpty,
+        )
+        .toList();
+
+    // 2. Set skin yang dipilih:
+    // Jika ada skin yang valid, ambil yang pertama sebagai default.
+    // Jika tidak (aneh), fallback ke skin pertama dari daftar asli.
+    if (_availableSkins.isNotEmpty) {
+      _selectedSkin = _availableSkins.first;
+    } else {
+      // Fallback jika semua skin tidak punya gambar
+      _selectedSkin = widget.weapon.skins.first;
+    }
+  }
+
+  // Helper widget untuk placeholder jika gambar error
+  Widget _buildImageErrorPlaceholder() {
+    return Container(
+      color: Colors.white.withOpacity(0.05),
+      child: const Center(
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: Colors.white30,
+          size: 60,
+        ),
+      ),
+    );
+  }
+
+  // Helper widget untuk loading indicator
+  Widget _buildImageLoadingIndicator(
+    BuildContext context,
+    Widget child,
+    ImageChunkEvent? loadingProgress,
+  ) {
+    if (loadingProgress == null) return child;
+    return const Center(
+      child: CircularProgressIndicator(color: Color(0xFFFF4655)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // URL untuk gambar utama
+    final String mainImageUrl = _selectedSkin.displayIcon ?? '';
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F1823),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          widget.weapon.displayName.toUpperCase(), // Judul = Nama Senjata
+          style: const TextStyle(
+            fontFamily: 'Teko',
+            fontSize: 28,
+            letterSpacing: 2,
+            color: Colors.white,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // --- 1. Area Gambar Utama ---
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: mainImageUrl.isEmpty
+                    ? _buildImageErrorPlaceholder()
+                    : Image.network(
+                        mainImageUrl,
+                        fit: BoxFit.contain,
+                        loadingBuilder: _buildImageLoadingIndicator,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildImageErrorPlaceholder(),
+                      ),
+              ),
+            ),
+
+            // --- 2. Area Kontrol Skin (Bagian Bawah) ---
+            Expanded(
+              flex: 2,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                // Efek gradient gelap (opsional, tapi mirip di game)
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black.withOpacity(0.4), Colors.transparent],
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- Nama Skin yang Dipilih ---
+                    Text(
+                      _selectedSkin.displayName.toUpperCase(),
+                      style: const TextStyle(
+                        fontFamily: 'Teko',
+                        fontSize: 26,
+                        letterSpacing: 1.5,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Tab "SKINS" (Hanya Teks) ---
+                    const Text(
+                      "SKINS",
+                      style: TextStyle(
+                        fontFamily: 'Teko',
+                        fontSize: 18,
+                        letterSpacing: 1,
+                        color: Color(0xFFFF4655), // Warna merah Valorant
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(
+                      color: Color(0xFFFF4655),
+                      thickness: 2,
+                      endIndent: 250,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // --- Daftar Skin (Scroll Horizontal) ---
+                    SizedBox(
+                      height: 80, // Tinggi untuk thumbnail
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _availableSkins.length,
+                        itemBuilder: (context, index) {
+                          final Skin skin = _availableSkins[index];
+                          final bool isSelected =
+                              skin.uuid == _selectedSkin.uuid;
+                          final String thumbnailUrl = skin.displayIcon ?? '';
+
+                          return GestureDetector(
+                            onTap: () {
+                              // Ganti skin yang dipilih saat diketuk
+                              setState(() {
+                                _selectedSkin = skin;
+                              });
+                            },
+                            child: Container(
+                              width: 80,
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(
+                                          0xFFFF4655,
+                                        ) // Border merah jika dipilih
+                                      : Colors.white.withOpacity(0.2),
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: thumbnailUrl.isEmpty
+                                    ? _buildImageErrorPlaceholder()
+                                    : Image.network(
+                                        thumbnailUrl,
+                                        fit: BoxFit.contain,
+                                        loadingBuilder:
+                                            _buildImageLoadingIndicator,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                _buildImageErrorPlaceholder(),
+                                      ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // --- Tombol "Equip Skin" ---
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Tambahkan logika "Equip" di sini
+                          print("Equipping: ${_selectedSkin.displayName}");
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF4655),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "EQUIP SKIN",
+                          style: TextStyle(
+                            fontFamily: 'Teko',
+                            fontSize: 20,
+                            letterSpacing: 1.5,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
