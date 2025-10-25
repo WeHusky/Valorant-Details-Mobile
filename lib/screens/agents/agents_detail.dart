@@ -129,7 +129,6 @@ class _AgentDetailPageState extends State<AgentDetailPage>
                         agent.displayName.toUpperCase(),
                         style: const TextStyle(
                           fontFamily: 'Tungsten',
-                          fontWeight: FontWeight.bold,
                           fontSize: 56,
                           color: Colors.white,
                           letterSpacing: 3,
@@ -252,7 +251,6 @@ class _AgentDetailPageState extends State<AgentDetailPage>
                             "LOCK IN",
                             style: TextStyle(
                               fontFamily: 'Tungsten',
-                              fontWeight: FontWeight.w600,
                               fontSize: 22,
                               letterSpacing: 2,
                               color: Colors.white,

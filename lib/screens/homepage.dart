@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tugas_akhir_valorant/screens/agents/show_agents.dart';
 import 'package:tugas_akhir_valorant/screens/weapons/show_weapons.dart';
+import 'package:tugas_akhir_valorant/screens/bundles/show_bundles.dart';
+import 'package:tugas_akhir_valorant/screens/topup/topup.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -44,7 +46,8 @@ class HomePage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const ShowAgentsPage()),
+                            builder: (context) => const ShowAgentsPage(),
+                          ),
                         );
                       },
                     ),
@@ -57,9 +60,45 @@ class HomePage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const ShowWeaponPage()),
+                            builder: (context) => const ShowWeaponPage(),
+                          ),
                         );
                       },
+                    ),
+                    _buildMenuCard(
+                      context,
+                      title: "BUNDLES",
+                      image:
+                          "https://static.wikia.nocookie.net/valorant/images/3/3e/Brimstone_artwork.png",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ShowBundlesPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      context,
+                      title: "TOPUP",
+                      image:
+                          "https://static.wikia.nocookie.net/valorant/images/3/3e/Brimstone_artwork.png",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ShowTopupPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      context,
+                      title: "CEK REGION",
+                      image:
+                          "https://static.wikia.nocookie.net/valorant/images/3/3e/Brimstone_artwork.png",
+                      onTap: () {},
                     ),
                   ],
                 ),
@@ -71,10 +110,12 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuCard(BuildContext context,
-      {required String title,
-      required String image,
-      required VoidCallback onTap}) {
+  Widget _buildMenuCard(
+    BuildContext context, {
+    required String title,
+    required String image,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -113,10 +154,7 @@ class HomePage extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.center,
-                  colors: [
-                    Colors.black.withOpacity(0.6),
-                    Colors.transparent,
-                  ],
+                  colors: [Colors.black.withOpacity(0.6), Colors.transparent],
                 ),
               ),
             ),

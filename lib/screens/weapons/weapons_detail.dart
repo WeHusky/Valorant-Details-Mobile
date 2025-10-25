@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tugas_akhir_valorant/model/weapons_model.dart'; // Sesuaikan path import modelmu
+import 'package:tugas_akhir_valorant/model/weapons_model.dart';
 
 class WeaponDetailPage extends StatefulWidget {
   final WeaponsModel weapon;
@@ -11,63 +11,39 @@ class WeaponDetailPage extends StatefulWidget {
 }
 
 class _WeaponDetailPageState extends State<WeaponDetailPage> {
-  // Variabel untuk menyimpan skin yang sedang dipilih
   late Skin _selectedSkin;
-
-  // Variabel untuk menyimpan daftar skin yang valid (punya gambar)
   late List<Skin> _availableSkins;
 
   @override
   void initState() {
     super.initState();
-
-    // 1. Saring daftar skin: Hanya ambil skin yang memiliki displayIcon (URL gambar)
     _availableSkins = widget.weapon.skins
-        .where(
-          (skin) => skin.displayIcon != null && skin.displayIcon!.isNotEmpty,
-        )
+        .where((skin) => skin.displayIcon != null && skin.displayIcon!.isNotEmpty)
         .toList();
 
-    // 2. Set skin yang dipilih:
-    // Jika ada skin yang valid, ambil yang pertama sebagai default.
-    // Jika tidak (aneh), fallback ke skin pertama dari daftar asli.
     if (_availableSkins.isNotEmpty) {
       _selectedSkin = _availableSkins.first;
     } else {
-      // Fallback jika semua skin tidak punya gambar
       _selectedSkin = widget.weapon.skins.first;
     }
   }
 
-  // Helper widget untuk placeholder jika gambar error
   Widget _buildImageErrorPlaceholder() {
     return Container(
       color: Colors.white.withOpacity(0.05),
       child: const Center(
-        child: Icon(
-          Icons.image_not_supported_outlined,
-          color: Colors.white30,
-          size: 60,
-        ),
+        child: Icon(Icons.image_not_supported_outlined, color: Colors.white30, size: 60),
       ),
     );
   }
 
-  // Helper widget untuk loading indicator
-  Widget _buildImageLoadingIndicator(
-    BuildContext context,
-    Widget child,
-    ImageChunkEvent? loadingProgress,
-  ) {
+  Widget _buildImageLoadingIndicator(BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
     if (loadingProgress == null) return child;
-    return const Center(
-      child: CircularProgressIndicator(color: Color(0xFFFF4655)),
-    );
+    return const Center(child: CircularProgressIndicator(color: Color(0xFFFF4655)));
   }
 
   @override
   Widget build(BuildContext context) {
-    // URL untuk gambar utama
     final String mainImageUrl = _selectedSkin.displayIcon ?? '';
 
     return Scaffold(
@@ -76,10 +52,10 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          widget.weapon.displayName.toUpperCase(), // Judul = Nama Senjata
+          widget.weapon.displayName.toUpperCase(),
           style: const TextStyle(
-            fontFamily: 'Teko',
-            fontSize: 28,
+            fontFamily: 'Tungsten-Bold',
+            fontSize: 30,
             letterSpacing: 2,
             color: Colors.white,
           ),
@@ -88,7 +64,7 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // --- 1. Area Gambar Utama ---
+            // Gambar utama senjata
             Expanded(
               flex: 3,
               child: Padding(
@@ -99,19 +75,17 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                         mainImageUrl,
                         fit: BoxFit.contain,
                         loadingBuilder: _buildImageLoadingIndicator,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildImageErrorPlaceholder(),
+                        errorBuilder: (context, error, stackTrace) => _buildImageErrorPlaceholder(),
                       ),
               ),
             ),
 
-            // --- 2. Area Kontrol Skin (Bagian Bawah) ---
+            // Bagian bawah skin dan tombol
             Expanded(
               flex: 2,
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16.0),
-                // Efek gradient gelap (opsional, tapi mirip di game)
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
@@ -120,31 +94,25 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                   ),
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- Nama Skin yang Dipilih ---
                     Text(
                       _selectedSkin.displayName.toUpperCase(),
                       style: const TextStyle(
-                        fontFamily: 'Teko',
+                        fontFamily: 'Tungsten-Bold',
                         fontSize: 26,
-                        letterSpacing: 1.5,
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // --- Tab "SKINS" (Hanya Teks) ---
                     const Text(
                       "SKINS",
                       style: TextStyle(
-                        fontFamily: 'Teko',
+                        fontFamily: 'Tungsten-Bold',
                         fontSize: 18,
                         letterSpacing: 1,
-                        color: Color(0xFFFF4655), // Warna merah Valorant
-                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFFF4655),
                       ),
                     ),
                     const Divider(
@@ -154,35 +122,32 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                     ),
                     const SizedBox(height: 10),
 
-                    // --- Daftar Skin (Scroll Horizontal) ---
+                    // ✅ Fix scroll horizontal
                     SizedBox(
-                      height: 80, // Tinggi untuk thumbnail
+                      height: 90,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         itemCount: _availableSkins.length,
                         itemBuilder: (context, index) {
-                          final Skin skin = _availableSkins[index];
-                          final bool isSelected =
-                              skin.uuid == _selectedSkin.uuid;
+                          final skin = _availableSkins[index];
+                          final bool isSelected = skin.uuid == _selectedSkin.uuid;
                           final String thumbnailUrl = skin.displayIcon ?? '';
 
                           return GestureDetector(
                             onTap: () {
-                              // Ganti skin yang dipilih saat diketuk
                               setState(() {
                                 _selectedSkin = skin;
                               });
                             },
                             child: Container(
-                              width: 80,
+                              width: 90,
                               margin: const EdgeInsets.only(right: 12),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.05),
                                 border: Border.all(
                                   color: isSelected
-                                      ? const Color(
-                                          0xFFFF4655,
-                                        ) // Border merah jika dipilih
+                                      ? const Color(0xFFFF4655)
                                       : Colors.white.withOpacity(0.2),
                                   width: 2,
                                 ),
@@ -195,11 +160,9 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                                     : Image.network(
                                         thumbnailUrl,
                                         fit: BoxFit.contain,
-                                        loadingBuilder:
-                                            _buildImageLoadingIndicator,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                _buildImageErrorPlaceholder(),
+                                        loadingBuilder: _buildImageLoadingIndicator,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            _buildImageErrorPlaceholder(),
                                       ),
                               ),
                             ),
@@ -207,14 +170,13 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                         },
                       ),
                     ),
+
                     const SizedBox(height: 20),
 
-                    // --- Tombol "Equip Skin" ---
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Tambahkan logika "Equip" di sini
                           print("Equipping: ${_selectedSkin.displayName}");
                         },
                         style: ElevatedButton.styleFrom(
@@ -227,11 +189,10 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                         child: const Text(
                           "EQUIP SKIN",
                           style: TextStyle(
-                            fontFamily: 'Teko',
+                            fontFamily: 'Tungsten-Bold',
                             fontSize: 20,
                             letterSpacing: 1.5,
                             color: Colors.white,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
