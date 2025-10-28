@@ -64,7 +64,6 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Gambar utama senjata
             Expanded(
               flex: 3,
               child: Padding(
@@ -79,8 +78,6 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                       ),
               ),
             ),
-
-            // Bagian bawah skin dan tombol
             Expanded(
               flex: 2,
               child: Container(
@@ -121,8 +118,6 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                       endIndent: 250,
                     ),
                     const SizedBox(height: 10),
-
-                    // ✅ Fix scroll horizontal
                     SizedBox(
                       height: 90,
                       child: ListView.builder(
@@ -170,9 +165,7 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                         },
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
