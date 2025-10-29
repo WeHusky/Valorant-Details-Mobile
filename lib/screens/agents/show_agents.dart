@@ -3,200 +3,231 @@ import 'package:tugas_akhir_valorant/model/agent_models.dart';
 import 'package:tugas_akhir_valorant/services/agent_services.dart';
 import 'package:tugas_akhir_valorant/screens/agents/agents_detail.dart';
 
-class ShowAgentsPage extends StatefulWidget {
-  const ShowAgentsPage({super.key});
+class ShowAgentPage extends StatefulWidget {
+  const ShowAgentPage({super.key});
 
   @override
-  State<ShowAgentsPage> createState() => _ShowAgentsPageState();
+  State<ShowAgentPage> createState() => _ShowAgentPageState();
 }
 
-class _ShowAgentsPageState extends State<ShowAgentsPage> {
+class _ShowAgentPageState extends State<ShowAgentPage> {
   final AgentService _agentService = AgentService();
+  final TextEditingController searchTextController = TextEditingController();
+
   late Future<List<AgentModel>> _futureAgents;
+  List<AgentModel> allAgents = [];
+  List<AgentModel> filteredAgents = [];
 
   @override
   void initState() {
     super.initState();
     _futureAgents = _agentService.getAgents();
+    _loadAgents();
+    searchTextController.addListener(_applySearchFilter);
+  }
+
+  /// Ambil data agent dari API
+  Future<void> _loadAgents() async {
+    try {
+      final agentData = await _agentService.getAgents();
+      setState(() {
+        allAgents = agentData;
+        filteredAgents = agentData;
+      });
+    } catch (e) {
+      debugPrint("Error loading agents: $e");
+    }
+  }
+
+  /// Filter agent berdasarkan teks pencarian
+  void _applySearchFilter() {
+    final query = searchTextController.text.toLowerCase();
+
+    setState(() {
+      filteredAgents = allAgents.where((agent) {
+        return agent.displayName.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    searchTextController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1923),
+      backgroundColor: const Color(0xFF0F1823),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text(
-          'SELECT YOUR AGENT',
+          "VALORANT AGENTS",
           style: TextStyle(
-            fontFamily: 'Rajdhani',
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+            fontFamily: 'Teko',
+            fontSize: 28,
             letterSpacing: 2,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF1B252F),
-        elevation: 0,
       ),
       body: FutureBuilder<List<AgentModel>>(
         future: _futureAgents,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFFE94057)),
+              child: CircularProgressIndicator(color: Color(0xFFFF4655)),
             );
-          } else if (snapshot.hasError) {
+          }
+
+          if (snapshot.hasError) {
             return Center(
               child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text(
-                'No agents found.',
-                style: TextStyle(color: Colors.white),
+                'Terjadi kesalahan: ${snapshot.error}',
+                style: const TextStyle(color: Colors.white),
               ),
             );
           }
 
-          final agents = snapshot.data!;
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-              childAspectRatio: 0.78,
-            ),
-            itemCount: agents.length,
-            itemBuilder: (context, index) {
-              final agent = agents[index];
-              return AgentCard(agent: agent);
-            },
+          return Column(
+            children: [
+              _buildSearchBar(),
+              Expanded(
+                child: filteredAgents.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Tidak ada Agent ditemukan.',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      )
+                    : _buildAgentGrid(filteredAgents),
+              ),
+            ],
           );
         },
       ),
     );
   }
-}
 
-class AgentCard extends StatefulWidget {
-  final AgentModel agent;
-  const AgentCard({super.key, required this.agent});
+  /// 🔍 Widget search bar
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: TextField(
+        controller: searchTextController,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: 'Cari Agent...',
+          hintStyle: const TextStyle(color: Colors.white54),
+          prefixIcon: const Icon(Icons.search, color: Colors.white70),
+          filled: true,
+          fillColor: const Color(0xFF1B252F),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: Color(0xFFFF4655), width: 2),
+          ),
+        ),
+      ),
+    );
+  }
 
-  @override
-  State<AgentCard> createState() => _AgentCardState();
-}
+  /// 🧱 Grid daftar agent
+  Widget _buildAgentGrid(List<AgentModel> agents) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: agents.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, // dua kolom
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.85,
+      ),
+      itemBuilder: (context, index) {
+        final agent = agents[index];
+        return _buildAgentCard(agent);
+      },
+    );
+  }
 
-class _AgentCardState extends State<AgentCard> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
+  /// 💥 Kartu individual agent
+  Widget _buildAgentCard(AgentModel agent) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 600),
-            pageBuilder: (_, __, ___) => AgentDetailPage(agent: widget.agent),
+          MaterialPageRoute(
+            builder: (context) => AgentDetailPage(agent: agent),
           ),
         );
       },
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B252F),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _isHovered
-                  ? const Color(0xFFE94057)
-                  : Colors.white.withOpacity(0.15),
-              width: 2,
-            ),
-            boxShadow: [
-              if (_isHovered)
-                BoxShadow(
-                  color: const Color(0xFFE94057).withOpacity(0.3),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Hero(
-                tag: widget.agent.displayName,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    widget.agent.fullPortrait,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Center(
-                      child: Icon(Icons.error, color: Colors.redAccent),
-                    ),
-                  ),
-                ),
-              ),
-              AnimatedOpacity(
-                opacity: _isHovered ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'CHOOSE',
-                      style: TextStyle(
-                        fontFamily: 'Rajdhani',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                        color: Colors.white,
-                        letterSpacing: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Foto Agent
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Image.network(
+                  agent.fullPortrait ?? "",
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Colors.white.withOpacity(0.3),
+                      size: 50,
+                    );
+                  },
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFFF4655),
+                        strokeWidth: 2,
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0F1923),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    widget.agent.displayName.toUpperCase(),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'Rajdhani',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.white,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
+            ),
+
+            // Nama Agent
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF4655).withOpacity(0.9),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(16),
                 ),
               ),
-            ],
-          ),
+              child: Text(
+                agent.displayName.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Teko',
+                  fontSize: 20,
+                  letterSpacing: 1.5,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

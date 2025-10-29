@@ -18,7 +18,9 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
   void initState() {
     super.initState();
     _availableSkins = widget.weapon.skins
-        .where((skin) => skin.displayIcon != null && skin.displayIcon!.isNotEmpty)
+        .where(
+          (skin) => skin.displayIcon != null && skin.displayIcon!.isNotEmpty,
+        )
         .toList();
 
     if (_availableSkins.isNotEmpty) {
@@ -32,14 +34,24 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
     return Container(
       color: Colors.white.withOpacity(0.05),
       child: const Center(
-        child: Icon(Icons.image_not_supported_outlined, color: Colors.white30, size: 60),
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: Colors.white30,
+          size: 60,
+        ),
       ),
     );
   }
 
-  Widget _buildImageLoadingIndicator(BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+  Widget _buildImageLoadingIndicator(
+    BuildContext context,
+    Widget child,
+    ImageChunkEvent? loadingProgress,
+  ) {
     if (loadingProgress == null) return child;
-    return const Center(child: CircularProgressIndicator(color: Color(0xFFFF4655)));
+    return const Center(
+      child: CircularProgressIndicator(color: Color(0xFFFF4655)),
+    );
   }
 
   @override
@@ -74,7 +86,8 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                         mainImageUrl,
                         fit: BoxFit.contain,
                         loadingBuilder: _buildImageLoadingIndicator,
-                        errorBuilder: (context, error, stackTrace) => _buildImageErrorPlaceholder(),
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildImageErrorPlaceholder(),
                       ),
               ),
             ),
@@ -126,7 +139,8 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                         itemCount: _availableSkins.length,
                         itemBuilder: (context, index) {
                           final skin = _availableSkins[index];
-                          final bool isSelected = skin.uuid == _selectedSkin.uuid;
+                          final bool isSelected =
+                              skin.uuid == _selectedSkin.uuid;
                           final String thumbnailUrl = skin.displayIcon ?? '';
 
                           return GestureDetector(
@@ -155,9 +169,11 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                                     : Image.network(
                                         thumbnailUrl,
                                         fit: BoxFit.contain,
-                                        loadingBuilder: _buildImageLoadingIndicator,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            _buildImageErrorPlaceholder(),
+                                        loadingBuilder:
+                                            _buildImageLoadingIndicator,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                _buildImageErrorPlaceholder(),
                                       ),
                               ),
                             ),
@@ -180,7 +196,7 @@ class _WeaponDetailPageState extends State<WeaponDetailPage> {
                           ),
                         ),
                         child: const Text(
-                          "EQUIP SKIN",
+                          "BUY",
                           style: TextStyle(
                             fontFamily: 'Tungsten-Bold',
                             fontSize: 20,

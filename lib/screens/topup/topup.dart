@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:tugas_akhir_valorant/database/db_helper.dart';
 
 class ShowTopupPage extends StatefulWidget {
   const ShowTopupPage({super.key});
@@ -9,17 +11,19 @@ class ShowTopupPage extends StatefulWidget {
 }
 
 class _ShowTopupPageState extends State<ShowTopupPage> {
+  // Mata uang aktif
   String selectedCurrency = 'IDR';
 
-  // Exchange rates (approximate values)
+  // Nilai tukar sederhana
   final Map<String, double> exchangeRates = {
     'IDR': 1.0,
-    'USD': 0.000064, // 1 IDR = 0.000064 USD
-    'SGD': 0.000085, // 1 IDR = 0.000085 SGD
-    'MYR': 0.0003, // 1 IDR = 0.0003 MYR
+    'USD': 0.000064,
+    'SGD': 0.000085,
+    'MYR': 0.0003,
   };
 
-  final List<TopupPackage> packages = [
+  // Daftar paket top-up
+  final List<TopupPackage> topupPackages = [
     TopupPackage(vp: 475, priceIdr: 56000),
     TopupPackage(vp: 1000, priceIdr: 112000),
     TopupPackage(vp: 2050, priceIdr: 224000),
@@ -28,10 +32,11 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
     TopupPackage(vp: 11000, priceIdr: 1099000),
   ];
 
+  // Format harga berdasarkan mata uang
   String formatPrice(double price) {
     switch (selectedCurrency) {
       case 'IDR':
-        return 'Rp. ${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+        return 'Rp. ${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
       case 'USD':
         return '\$${price.toStringAsFixed(2)}';
       case 'SGD':
@@ -39,15 +44,67 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
       case 'MYR':
         return 'MYR ${price.toStringAsFixed(2)}';
       default:
-        return 'Rp. ${price.toStringAsFixed(0)}';
+        return price.toString();
     }
   }
 
+  // Konversi harga IDR ke mata uang lain
   double convertPrice(int priceIdr) {
     return priceIdr * exchangeRates[selectedCurrency]!;
   }
 
-  void _showCurrencyDialog(BuildContext context, TopupPackage package) {
+  // Format waktu untuk beberapa zona
+  Map<String, String> getConvertedTimes() {
+    final now = DateTime.now().toUtc();
+
+    final wib = now.add(const Duration(hours: 7));
+    final wita = now.add(const Duration(hours: 8));
+    final wit = now.add(const Duration(hours: 9));
+    final london = now.add(const Duration(hours: 0));
+
+    final format = DateFormat('HH:mm');
+
+    return {
+      'WIB': format.format(wib),
+      'WITA': format.format(wita),
+      'WIT': format.format(wit),
+      'London': format.format(london),
+    };
+  }
+
+  // Tampilkan notifikasi pembelian + waktu
+  void showSuccessNotification(int vp) {
+    final times = getConvertedTimes();
+
+    final message =
+        '''
+Berhasil membeli $vp VP!
+🕓 WIB: ${times['WIB']}
+🕓 WITA: ${times['WITA']}
+🕓 WIT: ${times['WIT']}
+🌍 London: ${times['London']}
+''';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: const Color(0xFF1A1F2E),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Text(
+          message,
+          style: GoogleFonts.rajdhani(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  // Dialog pilih mata uang
+  void showCurrencyDialog(TopupPackage package) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -56,19 +113,19 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Container(
+          child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header dialog
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Pilih Mata Uang',
                       style: GoogleFonts.rajdhani(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -79,7 +136,7 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 Text(
                   '${package.vp} VP',
                   style: GoogleFonts.rajdhani(
@@ -88,18 +145,18 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
                     color: const Color(0xFFFF4655),
                   ),
                 ),
-                const SizedBox(height: 20),
-                ...['IDR', 'USD', 'SGD', 'MYR'].map((currency) {
-                  // Calculate price for this specific currency
+                const SizedBox(height: 16),
+
+                // Pilihan mata uang
+                ...exchangeRates.keys.map((currency) {
                   final convertedPrice =
                       package.priceIdr * exchangeRates[currency]!;
-
-                  // Format price for this specific currency
                   String displayPrice;
+
                   switch (currency) {
                     case 'IDR':
                       displayPrice =
-                          'Rp. ${convertedPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+                          'Rp. ${convertedPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
                       break;
                     case 'USD':
                       displayPrice = '\$${convertedPrice.toStringAsFixed(2)}';
@@ -111,11 +168,11 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
                       displayPrice = 'MYR ${convertedPrice.toStringAsFixed(2)}';
                       break;
                     default:
-                      displayPrice = 'Rp. ${convertedPrice.toStringAsFixed(0)}';
+                      displayPrice = convertedPrice.toString();
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: GestureDetector(
                       onTap: () {
                         setState(() {
@@ -124,7 +181,7 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
                         Navigator.pop(context);
                       },
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: selectedCurrency == currency
                               ? const Color(0xFFFF4655).withOpacity(0.2)
@@ -133,7 +190,7 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
                           border: Border.all(
                             color: selectedCurrency == currency
                                 ? const Color(0xFFFF4655)
-                                : Colors.white.withOpacity(0.1),
+                                : Colors.white.withOpacity(0.2),
                             width: 2,
                           ),
                         ),
@@ -172,6 +229,7 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
     );
   }
 
+  // UI utama
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,15 +254,15 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(9),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Current currency indicator
+              // Info mata uang aktif
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 8,
+                  vertical: 10,
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFF4655).withOpacity(0.2),
@@ -234,21 +292,23 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 20),
 
-              // VP Packages Grid
+              // Grid paket top-up
               Expanded(
                 child: GridView.builder(
+                  physics: const BouncingScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                     childAspectRatio: 0.85,
                   ),
-                  itemCount: packages.length,
+                  itemCount: topupPackages.length,
                   itemBuilder: (context, index) {
-                    final package = packages[index];
-                    return _buildTopupCard(package);
+                    final package = topupPackages[index];
+                    return buildTopupCard(package);
                   },
                 ),
               ),
@@ -259,18 +319,19 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
     );
   }
 
-  Widget _buildTopupCard(TopupPackage package) {
+  // Kartu topup
+  Widget buildTopupCard(TopupPackage package) {
     return GestureDetector(
-      onTap: () => _showCurrencyDialog(context, package),
+      onTap: () => showCurrencyDialog(package),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
             colors: [
               Colors.white.withOpacity(0.1),
               Colors.white.withOpacity(0.05),
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -290,55 +351,29 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // VP Amount
+              // Bagian atas
               Column(
                 children: [
                   Text(
                     '${package.vp}',
                     style: GoogleFonts.rajdhani(
-                      fontSize: 36,
+                      fontSize: 34,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 35,
-                        height: 35,
-                        child: Image.asset('assets/images/vp.png'),
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                  ),
+                  const SizedBox(height: 8),
+                  Image.asset('assets/images/vp.png', width: 40, height: 40),
                 ],
               ),
 
-              // Info Icon
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF4655).withOpacity(0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFFF4655), width: 2),
-                ),
-                child: const Icon(
-                  Icons.info_outline,
-                  color: Color(0xFFFF4655),
-                  size: 20,
-                ),
-              ),
-
-              // Price
+              // Harga & tombol beli
               Column(
                 children: [
                   Text(
                     'Mulai dari',
                     style: GoogleFonts.rajdhani(
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
                       color: const Color(0xFFFF4655).withOpacity(0.7),
                     ),
                   ),
@@ -351,6 +386,38 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
                       color: const Color(0xFFFF4655),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF4655),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
+                    ),
+                    onPressed: () async {
+                      final db = DBHelper();
+                      await db.insertTransaction({
+                        'vp': package.vp,
+                        'price': formatPrice(convertPrice(package.priceIdr)),
+                        'currency': selectedCurrency,
+                        'time': DateTime.now().toIso8601String(),
+                      });
+
+                      showSuccessNotification(package.vp);
+                    },
+                    child: Text(
+                      'Buy',
+                      style: GoogleFonts.rajdhani(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -361,6 +428,7 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
   }
 }
 
+// Model paket topup
 class TopupPackage {
   final int vp;
   final int priceIdr;

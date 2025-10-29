@@ -23,12 +23,13 @@ class TeamsService {
       int currentPage = 1;
 
       while (hasNext) {
-        final response = await http.get(
-          Uri.parse('$baseUrl?page=$currentPage'),
-        );
+        final response = await http.get(Uri.parse('$baseUrl?page=$currentPage'));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
+
+          if (data['data'] == null) break;
+
           final List teams = data['data'];
 
           for (var t in teams) {
@@ -37,25 +38,25 @@ class TeamsService {
             regionTeams[region]?.add(team);
           }
 
-          hasNext = data['pagination']['hasNextPage'] ?? false;
+          hasNext = data['pagination']?['hasNextPage'] ?? false;
           currentPage++;
         } else {
-          throw Exception(
-            'Failed to load teams (status: ${response.statusCode})',
-          );
+          print('⚠️ Failed to load page $currentPage (status: ${response.statusCode})');
+          hasNext = false; // berhenti biar gak infinite loop
         }
       }
     } catch (e) {
-      print('Error fetching teams by region: $e');
+      print('❌ Error fetching teams by region: $e');
     }
 
     return regionTeams;
   }
 
-  // 🧭 Fungsi bantu untuk mapping negara ke region besar
+  /// 🧭 Fungsi bantu untuk mapping negara ke region besar
   String mapCountryToRegion(String country) => _mapCountryToRegion(country);
+
   String _mapCountryToRegion(String country) {
-    final c = country.toLowerCase();
+    final c = (country ?? '').toLowerCase();
 
     if (c.contains('america') || c.contains('usa') || c.contains('canada')) {
       return 'North America (NA)';

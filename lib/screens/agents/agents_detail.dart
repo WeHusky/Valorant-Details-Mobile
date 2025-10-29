@@ -103,13 +103,12 @@ class _AgentDetailPageState extends State<AgentDetailPage>
                       /// ROLE
                       Row(
                         children: [
-                          if (agent.role.displayIcon != null)
-                            Image.network(
-                              agent.role.displayIcon!,
-                              width: 24,
-                              height: 24,
-                              color: const Color(0xFFE94057),
-                            ),
+                          Image.network(
+                            agent.role.displayIcon!,
+                            width: 24,
+                            height: 24,
+                            color: const Color(0xFFE94057),
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             agent.role.displayName.toUpperCase(),
@@ -173,7 +172,7 @@ class _AgentDetailPageState extends State<AgentDetailPage>
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Image.network(
-                                ability.displayIcon!,
+                                ability.displayIcon,
                                 width: 36,
                                 height: 36,
                                 color: Colors.white,

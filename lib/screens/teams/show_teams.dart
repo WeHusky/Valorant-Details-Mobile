@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:tugas_akhir_valorant/model/teams_models.dart';
 import 'package:tugas_akhir_valorant/services/teams_services.dart';
+import 'package:tugas_akhir_valorant/services/location_services.dart';
 
 class ShowTeamsPage extends StatefulWidget {
   const ShowTeamsPage({super.key});
@@ -15,7 +15,7 @@ class _ShowTeamsPageState extends State<ShowTeamsPage> {
   Future<Map<String, List<TeamModel>>>? _teamsFuture;
   final TeamsService _teamsService = TeamsService();
   String _userRegion = "Unknown";
-  String _userCountry = "";
+  String _userCountry = "Mendeteksi lokasi...";
 
   @override
   void initState() {
@@ -23,62 +23,29 @@ class _ShowTeamsPageState extends State<ShowTeamsPage> {
     _initPage();
   }
 
-  /// 🔹 Jalankan langkah awal: ambil lokasi & data tim
   Future<void> _initPage() async {
-    await _getUserLocation();
+    await _detectRegionFromLocation();
     setState(() {
       _teamsFuture = _teamsService.fetchTeamsByRegion();
     });
   }
 
-  /// 🔹 Dapatkan lokasi pengguna + tentukan region otomatis
-  Future<void> _getUserLocation() async {
+  /// 🔹 Gunakan LocationService untuk ambil posisi & tentukan region
+  Future<void> _detectRegionFromLocation() async {
     try {
-      // Pastikan service aktif
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        setState(() {
-          _userRegion = "Location service disabled";
-        });
+      final position = await LocationService.getUserLocation();
+      if (position == null) {
+        setState(() => _userCountry = "Tidak dapat mendeteksi lokasi");
         return;
       }
 
-      // Minta izin lokasi
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          setState(() {
-            _userRegion = "Permission denied";
-          });
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        setState(() {
-          _userRegion = "Permission permanently denied";
-        });
+      final country = await LocationService.getCountryFromPosition(position);
+      if (country == null) {
+        setState(() => _userCountry = "Negara tidak terdeteksi");
         return;
       }
 
-      // Ambil posisi
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      // Ambil info lokasi (negara)
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      final country = placemarks.first.country ?? "Unknown";
-      setState(() {
-        _userCountry = country;
-      });
-
-      // Tentukan region berdasar negara
+      // Tentukan region berdasarkan negara
       String region;
       if (country.toLowerCase().contains("indonesia")) {
         region = "APAC";
@@ -93,13 +60,14 @@ class _ShowTeamsPageState extends State<ShowTeamsPage> {
       }
 
       setState(() {
+        _userCountry = country;
         _userRegion = region;
       });
 
       print("📍 Country: $country → Region: $_userRegion");
     } catch (e) {
       print("❌ Gagal mendapatkan lokasi: $e");
-      setState(() => _userRegion = "Unknown");
+      setState(() => _userCountry = "Error lokasi");
     }
   }
 
@@ -151,8 +119,10 @@ class _ShowTeamsPageState extends State<ShowTeamsPage> {
                 final teamsByRegion = snapshot.data!;
 
                 return ListView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   children: [
                     // 🔹 Info lokasi pengguna di atas
                     Container(
@@ -167,14 +137,14 @@ class _ShowTeamsPageState extends State<ShowTeamsPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.location_on,
-                              color: Color(0xFFFF4655)),
+                          const Icon(
+                            Icons.location_on,
+                            color: Color(0xFFFF4655),
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              _userCountry.isEmpty
-                                  ? "Mendeteksi lokasi..."
-                                  : "Lokasi kamu: $_userCountry → Region kamu: $_userRegion",
+                              "Lokasi kamu: $_userCountry → Region kamu: $_userRegion",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontFamily: 'Rajdhani',
@@ -226,7 +196,7 @@ class _ShowTeamsPageState extends State<ShowTeamsPage> {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 );
               },
@@ -244,13 +214,6 @@ class _ShowTeamsPageState extends State<ShowTeamsPage> {
           color: const Color(0xFFFF4655).withOpacity(0.4),
           width: 1.3,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
