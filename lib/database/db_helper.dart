@@ -1,5 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:tugas_akhir_valorant/model/user_model.dart';
 
 class DBHelper {
   static final DBHelper _instance = DBHelper._internal();
@@ -21,7 +24,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // Naikkan versi database
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE transactions (
@@ -32,6 +35,28 @@ class DBHelper {
             time TEXT
           )
         ''');
+
+        await db.execute('''
+          CREATE TABLE users(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Ini akan dipanggil ketika versi database yang baru lebih tinggi dari yang lama.
+        // Misalnya, jika pengguna memiliki database versi 1 dan Anda merilis versi 2.
+        if (oldVersion < 2) {
+          // Jika database lama tidak memiliki tabel 'users', buatlah.
+          await db.execute('''
+            CREATE TABLE users(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              username TEXT NOT NULL UNIQUE,
+              password TEXT NOT NULL
+            )
+          ''');
+        }
       },
     );
   }
@@ -44,5 +69,39 @@ class DBHelper {
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     final db = await database;
     return await db.query('transactions', orderBy: 'id DESC');
+  }
+
+  String _hashPassword(String password) {
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  Future<int> registerUser(User user) async {
+    final db = await database;
+    final hashed = _hashPassword(user.password);
+    final userMap = user.toMap()
+      ..update('password', (_) => hashed, ifAbsent: () => hashed)
+      ..removeWhere((key, value) => key == 'id' && value == null);
+    return await db.insert(
+      'users',
+      userMap,
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  Future<User?> loginUser(String username, String password) async {
+    final db = await database;
+    final hashed = _hashPassword(password);
+    final res = await db.query(
+      'users',
+      where: 'username = ? AND password = ?',
+      whereArgs: [username, hashed],
+      limit: 1,
+    );
+    if (res.isNotEmpty) {
+      return User.fromMap(res.first);
+    }
+    return null;
   }
 }

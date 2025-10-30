@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:tugas_akhir_valorant/database/db_helper.dart';
 
+import 'package:permission_handler/permission_handler.dart';
+import 'package:tugas_akhir_valorant/services/notification_service.dart';
+
 class ShowTopupPage extends StatefulWidget {
   const ShowTopupPage({super.key});
 
@@ -11,6 +14,21 @@ class ShowTopupPage extends StatefulWidget {
 }
 
 class _ShowTopupPageState extends State<ShowTopupPage> {
+  final NotificationService _notificationService = NotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _requestNotificationPermission();
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    PermissionStatus status = await Permission.notification.request();
+    if (status.isDenied) {
+      // Pengguna menolak izin, Anda bisa menampilkan dialog penjelasan di sini jika perlu.
+    }
+  }
+
   // Mata uang aktif
   String selectedCurrency = 'IDR';
 
@@ -51,56 +69,6 @@ class _ShowTopupPageState extends State<ShowTopupPage> {
   // Konversi harga IDR ke mata uang lain
   double convertPrice(int priceIdr) {
     return priceIdr * exchangeRates[selectedCurrency]!;
-  }
-
-  // Format waktu untuk beberapa zona
-  Map<String, String> getConvertedTimes() {
-    final now = DateTime.now().toUtc();
-
-    final wib = now.add(const Duration(hours: 7));
-    final wita = now.add(const Duration(hours: 8));
-    final wit = now.add(const Duration(hours: 9));
-    final london = now.add(const Duration(hours: 0));
-
-    final format = DateFormat('HH:mm');
-
-    return {
-      'WIB': format.format(wib),
-      'WITA': format.format(wita),
-      'WIT': format.format(wit),
-      'London': format.format(london),
-    };
-  }
-
-  // Tampilkan notifikasi pembelian + waktu
-  void showSuccessNotification(int vp) {
-    final times = getConvertedTimes();
-
-    final message =
-        '''
-Berhasil membeli $vp VP!
-🕓 WIB: ${times['WIB']}
-🕓 WITA: ${times['WITA']}
-🕓 WIT: ${times['WIT']}
-🌍 London: ${times['London']}
-''';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF1A1F2E),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Text(
-          message,
-          style: GoogleFonts.rajdhani(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        duration: const Duration(seconds: 5),
-      ),
-    );
   }
 
   // Dialog pilih mata uang
@@ -408,7 +376,9 @@ Berhasil membeli $vp VP!
                         'time': DateTime.now().toIso8601String(),
                       });
 
-                      showSuccessNotification(package.vp);
+                      _notificationService.showTopupSuccessNotification(
+                        package.vp,
+                      );
                     },
                     child: Text(
                       'Buy',

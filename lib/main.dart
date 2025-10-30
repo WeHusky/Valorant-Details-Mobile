@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tugas_akhir_valorant/screens/login_register_page.dart';
 import 'package:tugas_akhir_valorant/screens/homepage.dart';
+import 'package:tugas_akhir_valorant/services/secure_services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,23 +13,35 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Valorant Agents',
-      debugShowCheckedModeBanner: false,
+      title: 'Valorant App',
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F1923),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1F2326),
-          foregroundColor: Colors.white,
-        ),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFF4655),
-          secondary: Color(0xFF1F2326),
-        ),
-        fontFamily: 'Roboto',
+        primarySwatch: Colors.red,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const HomePage(),
-      routes: {'/agents': (context) => const HomePage()},
+      debugShowCheckedModeBanner: false,
+      home: const AuthChecker(),
+    );
+  }
+}
+
+class AuthChecker extends StatelessWidget {
+  const AuthChecker({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: SecureStore.readEncrypted('user_session'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        // Jika ada sesi (tidak null dan tidak kosong), masuk ke HomePage
+        return (snapshot.hasData && snapshot.data!.isNotEmpty)
+            ? const HomePage()
+            : const LoginRegisterPage();
+      },
     );
   }
 }

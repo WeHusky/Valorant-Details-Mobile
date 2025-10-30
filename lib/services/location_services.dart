@@ -2,7 +2,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
 class LocationService {
-  /// Ambil posisi user dengan izin otomatis
+  /// perizinan lokasi
   static Future<Position?> getUserLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -30,7 +30,7 @@ class LocationService {
     );
   }
 
-  /// Ubah posisi jadi nama negara
+  /// posisi ke negara
   static Future<String?> getCountryFromPosition(Position position) async {
     try {
       final placemarks = await placemarkFromCoordinates(

@@ -4,6 +4,7 @@ import 'package:tugas_akhir_valorant/screens/weapons/show_weapons.dart';
 import 'package:tugas_akhir_valorant/screens/bundles/show_bundles.dart';
 import 'package:tugas_akhir_valorant/screens/topup/topup.dart';
 import 'package:tugas_akhir_valorant/screens/teams/show_teams.dart';
+import 'package:tugas_akhir_valorant/screens/user page/me.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -130,7 +131,14 @@ class HomePage extends StatelessWidget {
                           context,
                           title: "USER INFO",
                           icon: Icons.person,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfilePage(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
