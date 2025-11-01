@@ -24,7 +24,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 2, // Naikkan versi database
+      version: 3, // Naikkan versi database
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE transactions (
@@ -43,6 +43,15 @@ class DBHelper {
             password TEXT NOT NULL
           )
         ''');
+
+        await db.execute('''
+          CREATE TABLE feedback(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            kesan TEXT,
+            pesan TEXT,
+            time TEXT
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // Ini akan dipanggil ketika versi database yang baru lebih tinggi dari yang lama.
@@ -54,6 +63,16 @@ class DBHelper {
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               username TEXT NOT NULL UNIQUE,
               password TEXT NOT NULL
+            )
+          ''');
+        }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE feedback(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              kesan TEXT,
+              pesan TEXT,
+              time TEXT
             )
           ''');
         }
@@ -69,6 +88,21 @@ class DBHelper {
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     final db = await database;
     return await db.query('transactions', orderBy: 'id DESC');
+  }
+
+  Future<int> insertFeedback(Map<String, dynamic> data) async {
+    final db = await database;
+    return await db.insert('feedback', data);
+  }
+
+  Future<List<Map<String, dynamic>>> getAllFeedback() async {
+    final db = await database;
+    return await db.query('feedback', orderBy: 'id DESC');
+  }
+
+  Future<int> deleteFeedback(int id) async {
+    final db = await database;
+    return await db.delete('feedback', where: 'id = ?', whereArgs: [id]);
   }
 
   String _hashPassword(String password) {
